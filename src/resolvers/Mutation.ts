@@ -83,4 +83,34 @@ export const Mutation = {
             }
         }
     },
+    postDelete: async (_: any, { postId }: { postId: string }, { prisma }: Context): Promise<PostPayloadType> => {
+        if (!postId) {
+            return {
+                userErrors: [{ message: 'PostId is required' }],
+                post: null,
+            }
+        }
+
+        try {
+            await prisma.post.delete({
+                where: {
+                    id: postId,
+                },
+            })
+
+            return {
+                userErrors: [],
+                post: null,
+            }
+        } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError) {
+                if (error.code === 'P2025') {
+                    return {
+                        userErrors: [{ message: `Post with id '${postId}' was not found` }],
+                        post: null,
+                    }
+                }
+            }
+        }
+    },
 }

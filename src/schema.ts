@@ -6,8 +6,9 @@ const typeDefs = gql`
     }
 
     type Mutation {
-        postCreate(input: PostInput!): PostPayload!
+        postCreate(newValues: PostInput!): PostPayload!
         postUpdate(postId: ID!, newValues: PostInput!): PostPayload!
+        postDelete(postId: ID!): PostPayload!
     }
 
     input PostInput {
