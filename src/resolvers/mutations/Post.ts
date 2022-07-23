@@ -58,9 +58,6 @@ export const PostMutations = {
             }
         }
 
-        // if (!newValues.title) delete newValues.title
-        // if (!newValues.content) delete newValues.content
-
         try {
             const post = await prisma.post.update({
                 where: {
@@ -80,13 +77,18 @@ export const PostMutations = {
                         userErrors: [{ message: `Post with id '${postId}' was not found` }],
                         post: null,
                     }
+                } else {
+                    return {
+                        userErrors: [{ message: `Something went wrong (Prisma error code "${error.code}")` }],
+                        post: null,
+                    }
+                }
+            } else {
+                return {
+                    userErrors: [{ message: 'Something went wrong' }],
+                    post: null,
                 }
             }
-        }
-
-        return {
-            userErrors: [{ message: 'Something went wrong' }],
-            post: null,
         }
     },
     postDelete: async (_: any, { postId }: { postId: string }, { prisma }: Context): Promise<PostPayloadType> => {
@@ -115,13 +117,18 @@ export const PostMutations = {
                         userErrors: [{ message: `Post with id '${postId}' was not found` }],
                         post: null,
                     }
+                } else {
+                    return {
+                        userErrors: [{ message: `Something went wrong (Prisma error code "${error.code}")` }],
+                        post: null,
+                    }
+                }
+            } else {
+                return {
+                    userErrors: [{ message: 'Something went wrong' }],
+                    post: null,
                 }
             }
-        }
-
-        return {
-            userErrors: [{ message: 'Something went wrong' }],
-            post: null,
         }
     },
 }
