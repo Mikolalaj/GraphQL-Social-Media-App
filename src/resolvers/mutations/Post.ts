@@ -83,6 +83,11 @@ export const PostMutations = {
                 }
             }
         }
+
+        return {
+            userErrors: [{ message: 'Something went wrong' }],
+            post: null,
+        }
     },
     postDelete: async (_: any, { postId }: { postId: string }, { prisma }: Context): Promise<PostPayloadType> => {
         if (!postId) {
@@ -112,6 +117,11 @@ export const PostMutations = {
                     }
                 }
             }
+        }
+
+        return {
+            userErrors: [{ message: 'Something went wrong' }],
+            post: null,
         }
     },
 }
