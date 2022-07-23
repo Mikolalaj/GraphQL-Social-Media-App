@@ -56,24 +56,21 @@ export const AuthMutations = {
                             userErrors: [{ message: 'Email already exists' }],
                             token: null,
                         }
-                    } else {
-                        return {
-                            userErrors: [{ message: `Something went wrong (Prisma error code "${error.code}")` }],
-                            token: null,
-                        }
                     }
-                } else {
                     return {
-                        userErrors: [{ message: 'Something went wrong' }],
+                        userErrors: [{ message: `Something went wrong (Prisma error code "${error.code}")` }],
                         token: null,
                     }
                 }
+                return {
+                    userErrors: [{ message: 'Something went wrong' }],
+                    token: null,
+                }
             }
-        } else {
-            return {
-                userErrors: stringifyZodError(newUser.error),
-                token: null,
-            }
+        }
+        return {
+            userErrors: stringifyZodError(newUser.error),
+            token: null,
         }
     },
     signin: async (_: any, { cridentials }: CridentialsArgsType, { prisma }: Context): Promise<AuthPayloadType> => {
@@ -86,11 +83,6 @@ export const AuthMutations = {
                 },
             })
 
-            const failedAuthPayload = {
-                userErrors: [{ message: 'Invalid email or password' }],
-                token: null,
-            }
-
             if (user) {
                 const isValid = await bcrypt.compare(cridentials.password, user.password)
 
@@ -99,17 +91,16 @@ export const AuthMutations = {
                         userErrors: [],
                         token: createJWT(user.id),
                     }
-                } else {
-                    return failedAuthPayload
                 }
-            } else {
-                return failedAuthPayload
             }
-        } else {
             return {
-                userErrors: stringifyZodError(userCridentials.error),
+                userErrors: [{ message: 'Invalid email or password' }],
                 token: null,
             }
+        }
+        return {
+            userErrors: stringifyZodError(userCridentials.error),
+            token: null,
         }
     },
 }
