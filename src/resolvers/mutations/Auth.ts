@@ -9,7 +9,7 @@ const SignUpArgs = z.object({
     email: z.string().email().trim(),
     password: z.string().min(8, 'Password must be at least 8 characters long'),
     name: z.string().trim().min(2, 'Name must be at least 2 characters long'),
-    // bio: z.string().trim().min(2, 'Bio must be at least 2 characters long'),
+    bio: z.string().trim().min(2, 'Bio must be at least 2 characters long'),
 })
 
 type SignUpArgsType = z.infer<typeof SignUpArgs>
@@ -22,15 +22,23 @@ interface AuthPayloadType {
 }
 
 export const AuthMutations = {
-    signup: async (_: any, { email, password, name }: SignUpArgsType, { prisma }: Context): Promise<AuthPayloadType> => {
-        const newUser = SignUpArgs.safeParse({ email, password, name })
+    signup: async (_: any, { email, password, name, bio }: SignUpArgsType, { prisma }: Context): Promise<AuthPayloadType> => {
+        const newUser = SignUpArgs.safeParse({ email, password, name, bio })
 
         if (newUser.success) {
             try {
                 const user = await prisma.user.create({
                     data: {
-                        ...newUser.data,
+                        email,
+                        name,
                         password: await bcrypt.hash(newUser.data.password, 10),
+                    },
+                })
+
+                await prisma.profile.create({
+                    data: {
+                        bio,
+                        userId: user.id,
                     },
                 })
 
