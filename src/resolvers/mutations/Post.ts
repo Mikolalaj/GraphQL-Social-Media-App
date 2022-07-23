@@ -1,6 +1,6 @@
 import { Post, Prisma } from '@prisma/client'
 import { Context } from '../../index'
-import { deleteNotUsedFields } from './utils'
+import { deleteNotUsedFields, canUserMutatePost } from './utils'
 
 interface PostArgs {
     newValues: {
@@ -21,8 +21,16 @@ interface PostPayloadType {
 }
 
 export const PostMutations = {
-    postCreate: async (_: any, { newValues }: PostArgs, { prisma }: Context): Promise<PostPayloadType> => {
+    postCreate: async (_: any, { newValues }: PostArgs, { prisma, userInfo }: Context): Promise<PostPayloadType> => {
+        if (!userInfo) {
+            return {
+                userErrors: [{ message: 'Not authenticated' }],
+                post: null,
+            }
+        }
+
         const { title, content } = newValues
+
         if (!title || !content) {
             return {
                 userErrors: [{ message: 'Title and content are required' }],
@@ -34,7 +42,7 @@ export const PostMutations = {
             data: {
                 title,
                 content,
-                authorId: '492f5165-978d-4f45-8d58-151bcedb6df1',
+                authorId: userInfo.userId,
             },
         })
 
@@ -43,10 +51,26 @@ export const PostMutations = {
             post,
         }
     },
-    postUpdate: async (_: any, { postId, newValues }: PostUpdateArgs, { prisma }: Context): Promise<PostPayloadType> => {
+    postUpdate: async (_: any, { postId, newValues }: PostUpdateArgs, { prisma, userInfo }: Context): Promise<PostPayloadType> => {
+        if (!userInfo) {
+            return {
+                userErrors: [{ message: 'Not authenticated' }],
+                post: null,
+            }
+        }
+
         if (!postId) {
             return {
                 userErrors: [{ message: 'PostId is required' }],
+                post: null,
+            }
+        }
+
+        const errors = await canUserMutatePost(userInfo.userId, postId, prisma)
+
+        if (errors.length > 0) {
+            return {
+                userErrors: errors,
                 post: null,
             }
         }
@@ -91,10 +115,26 @@ export const PostMutations = {
             }
         }
     },
-    postDelete: async (_: any, { postId }: { postId: string }, { prisma }: Context): Promise<PostPayloadType> => {
+    postDelete: async (_: any, { postId }: { postId: string }, { prisma, userInfo }: Context): Promise<PostPayloadType> => {
+        if (!userInfo) {
+            return {
+                userErrors: [{ message: 'Not authenticated' }],
+                post: null,
+            }
+        }
+
         if (!postId) {
             return {
                 userErrors: [{ message: 'PostId is required' }],
+                post: null,
+            }
+        }
+
+        const errors = await canUserMutatePost(userInfo.userId, postId, prisma)
+
+        if (errors.length > 0) {
+            return {
+                userErrors: errors,
                 post: null,
             }
         }
