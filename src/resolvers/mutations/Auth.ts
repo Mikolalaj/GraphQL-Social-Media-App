@@ -1,7 +1,9 @@
-import { User, Prisma } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { Context } from '../../index'
 import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
+import 'dotenv/config'
 
 const SignUpArgs = z.object({
     email: z.string().email().trim(),
@@ -16,7 +18,7 @@ interface AuthPayloadType {
     userErrors: {
         message: string
     }[]
-    user: User | null
+    token: string | null
 }
 
 export const AuthMutations = {
@@ -31,27 +33,28 @@ export const AuthMutations = {
                         password: await bcrypt.hash(newUser.data.password, 10),
                     },
                 })
+
                 return {
                     userErrors: [],
-                    user,
+                    token: jwt.sign({ userId: user.id }, process.env.JWT_SECRET as string, { expiresIn: '1d' }),
                 }
             } catch (error) {
                 if (error instanceof Prisma.PrismaClientKnownRequestError) {
                     if (error.code === 'P2002') {
                         return {
                             userErrors: [{ message: 'Email already exists' }],
-                            user: null,
+                            token: null,
                         }
                     } else {
                         return {
                             userErrors: [{ message: `Something went wrong (Prisma error code "${error.code}")` }],
-                            user: null,
+                            token: null,
                         }
                     }
                 } else {
                     return {
                         userErrors: [{ message: 'Something went wrong' }],
-                        user: null,
+                        token: null,
                     }
                 }
             }
@@ -61,7 +64,7 @@ export const AuthMutations = {
             })
             return {
                 userErrors: errors,
-                user: null,
+                token: null,
             }
         }
     },
