@@ -86,6 +86,11 @@ export const AuthMutations = {
                 },
             })
 
+            const failedAuthPayload = {
+                userErrors: [{ message: 'Invalid email or password' }],
+                token: null,
+            }
+
             if (user) {
                 const isValid = await bcrypt.compare(cridentials.password, user.password)
 
@@ -95,16 +100,10 @@ export const AuthMutations = {
                         token: createJWT(user.id),
                     }
                 } else {
-                    return {
-                        userErrors: [{ message: 'Invalid password' }],
-                        token: null,
-                    }
+                    return failedAuthPayload
                 }
             } else {
-                return {
-                    userErrors: [{ message: 'Invalid email' }],
-                    token: null,
-                }
+                return failedAuthPayload
             }
         } else {
             return {
