@@ -2,36 +2,39 @@ import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { Context } from '../../index'
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
-import 'dotenv/config'
+import { stringifyZodError, createJWT, userErrorsType } from './utils'
 
-const SignUpArgs = z.object({
-    email: z.string().email().trim(),
-    password: z.string().min(8, 'Password must be at least 8 characters long'),
+const CridentialsArgs = z.object({
+    cridentials: z.object({
+        email: z.string().email().trim(),
+        password: z.string().min(8, 'Password must be at least 8 characters long'),
+    }),
+})
+
+const SignUpArgs = CridentialsArgs.extend({
     name: z.string().trim().min(2, 'Name must be at least 2 characters long'),
     bio: z.string().trim().min(2, 'Bio must be at least 2 characters long'),
 })
 
+type CridentialsArgsType = z.infer<typeof CridentialsArgs>
 type SignUpArgsType = z.infer<typeof SignUpArgs>
 
 interface AuthPayloadType {
-    userErrors: {
-        message: string
-    }[]
+    userErrors: userErrorsType
     token: string | null
 }
 
 export const AuthMutations = {
-    signup: async (_: any, { email, password, name, bio }: SignUpArgsType, { prisma }: Context): Promise<AuthPayloadType> => {
-        const newUser = SignUpArgs.safeParse({ email, password, name, bio })
+    signup: async (_: any, { name, bio, cridentials }: SignUpArgsType, { prisma }: Context): Promise<AuthPayloadType> => {
+        const newUser = SignUpArgs.safeParse({ cridentials, name, bio })
 
         if (newUser.success) {
             try {
                 const user = await prisma.user.create({
                     data: {
-                        email,
+                        email: cridentials.email,
                         name,
-                        password: await bcrypt.hash(newUser.data.password, 10),
+                        password: await bcrypt.hash(newUser.data.cridentials.password, 10),
                     },
                 })
 
@@ -44,7 +47,7 @@ export const AuthMutations = {
 
                 return {
                     userErrors: [],
-                    token: jwt.sign({ userId: user.id }, process.env.JWT_SECRET as string, { expiresIn: '1d' }),
+                    token: createJWT(user.id),
                 }
             } catch (error) {
                 if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -67,11 +70,45 @@ export const AuthMutations = {
                 }
             }
         } else {
-            const errors = newUser.error.issues.map(field => {
-                return { message: `${field.message} (${field.path.join('.')})` }
-            })
             return {
-                userErrors: errors,
+                userErrors: stringifyZodError(newUser.error),
+                token: null,
+            }
+        }
+    },
+    signin: async (_: any, { cridentials }: CridentialsArgsType, { prisma }: Context): Promise<AuthPayloadType> => {
+        const userCridentials = CridentialsArgs.safeParse({ cridentials })
+
+        if (userCridentials.success) {
+            const user = await prisma.user.findFirst({
+                where: {
+                    email: userCridentials.data.cridentials.email,
+                },
+            })
+
+            if (user) {
+                const isValid = await bcrypt.compare(cridentials.password, user.password)
+
+                if (isValid) {
+                    return {
+                        userErrors: [],
+                        token: createJWT(user.id),
+                    }
+                } else {
+                    return {
+                        userErrors: [{ message: 'Invalid password' }],
+                        token: null,
+                    }
+                }
+            } else {
+                return {
+                    userErrors: [{ message: 'Invalid email' }],
+                    token: null,
+                }
+            }
+        } else {
+            return {
+                userErrors: stringifyZodError(userCridentials.error),
                 token: null,
             }
         }
