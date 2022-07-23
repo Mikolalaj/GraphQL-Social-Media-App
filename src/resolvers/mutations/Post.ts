@@ -1,5 +1,6 @@
 import { Post, Prisma } from '@prisma/client'
-import { Context } from '../index'
+import { Context } from '../../index'
+import { deleteNotUsedFields } from './utils'
 
 interface PostArgs {
     newValues: {
@@ -19,7 +20,7 @@ interface PostPayloadType {
     post: Post | null
 }
 
-export const Mutation = {
+export const PostMutations = {
     postCreate: async (_: any, { newValues }: PostArgs, { prisma }: Context): Promise<PostPayloadType> => {
         const { title, content } = newValues
         if (!title || !content) {
@@ -57,15 +58,15 @@ export const Mutation = {
             }
         }
 
-        if (!newValues.title) delete newValues.title
-        if (!newValues.content) delete newValues.content
+        // if (!newValues.title) delete newValues.title
+        // if (!newValues.content) delete newValues.content
 
         try {
             const post = await prisma.post.update({
                 where: {
                     id: postId,
                 },
-                data: newValues,
+                data: deleteNotUsedFields(newValues),
             })
 
             return {
