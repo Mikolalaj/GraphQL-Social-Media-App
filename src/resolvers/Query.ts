@@ -1,4 +1,4 @@
-import { Post } from '@prisma/client'
+import { Post, User } from '@prisma/client'
 import { Context } from '../index'
 
 export const Query = {
@@ -7,5 +7,15 @@ export const Query = {
             orderBy: [{ createdAt: 'desc' }],
         })
         return posts
+    },
+    me: async (_: any, __: any, { prisma, userInfo }: Context): Promise<User | null> => {
+        if (!userInfo) {
+            return null
+        }
+        return prisma.user.findFirst({
+            where: {
+                id: userInfo.userId,
+            },
+        })
     },
 }
