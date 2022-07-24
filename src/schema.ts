@@ -4,6 +4,7 @@ const typeDefs = gql`
     type Query {
         posts: [Post!]!
         me: User
+        profile(userId: ID!): Profile
     }
 
     type Mutation {
@@ -44,7 +45,6 @@ const typeDefs = gql`
         id: ID!
         name: String!
         email: String!
-        profile: Profile!
         posts: [Post!]!
     }
 

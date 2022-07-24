@@ -1,4 +1,4 @@
-import { Post, User } from '@prisma/client'
+import { Post, User, Profile } from '@prisma/client'
 import { Context } from '../index'
 
 export const Query = {
@@ -15,6 +15,13 @@ export const Query = {
         return prisma.user.findFirst({
             where: {
                 id: userInfo.userId,
+            },
+        })
+    },
+    profile: async (_: any, { userId }: { userId: string }, { prisma }: Context): Promise<Profile | null> => {
+        return prisma.profile.findUnique({
+            where: {
+                userId: userId,
             },
         })
     },
