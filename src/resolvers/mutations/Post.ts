@@ -20,6 +20,63 @@ interface PostPayloadType {
     post: Post | null
 }
 
+const postChangePublish = async (
+    _: any,
+    { postId }: { postId: string },
+    { prisma, userInfo }: Context,
+    value: boolean
+): Promise<PostPayloadType> => {
+    if (!userInfo) {
+        return {
+            userErrors: [{ message: 'Not authenticated' }],
+            post: null,
+        }
+    }
+
+    if (!postId) {
+        return {
+            userErrors: [{ message: 'PostId is required' }],
+            post: null,
+        }
+    }
+
+    const errors = await canUserMutatePost(userInfo.userId, postId, prisma)
+
+    if (errors.length > 0) {
+        return {
+            userErrors: errors,
+            post: null,
+        }
+    }
+
+    try {
+        const post = await prisma.post.update({
+            where: {
+                id: postId,
+            },
+            data: {
+                published: value,
+            },
+        })
+
+        return {
+            userErrors: [],
+            post,
+        }
+    } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            return {
+                userErrors: [{ message: `Something went wrong (Prisma error code "${error.code}")` }],
+                post: null,
+            }
+        }
+        return {
+            userErrors: [{ message: 'Something went wrong' }],
+            post: null,
+        }
+    }
+}
+
 export const PostMutations = {
     postCreate: async (_: any, { newValues }: PostArgs, { prisma, userInfo }: Context): Promise<PostPayloadType> => {
         if (!userInfo) {
@@ -170,5 +227,11 @@ export const PostMutations = {
                 }
             }
         }
+    },
+    postPublish: async (_: any, { postId }: { postId: string }, { prisma, userInfo }: Context): Promise<PostPayloadType> => {
+        return postChangePublish(_, { postId }, { prisma, userInfo }, true)
+    },
+    postUnpublish: async (_: any, { postId }: { postId: string }, { prisma, userInfo }: Context): Promise<PostPayloadType> => {
+        return postChangePublish(_, { postId }, { prisma, userInfo }, false)
     },
 }

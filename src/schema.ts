@@ -9,6 +9,8 @@ const typeDefs = gql`
         postCreate(newValues: PostInput!): PostPayload!
         postUpdate(postId: ID!, newValues: PostInput!): PostPayload!
         postDelete(postId: ID!): PostPayload!
+        postPublish(postId: ID!): PostPayload!
+        postUnpublish(postId: ID!): PostPayload!
         signup(name: String!, bio: String!, cridentials: CridentialsInput): AuthPayload
         signin(cridentials: CridentialsInput): AuthPayload
     }
